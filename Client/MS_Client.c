@@ -18,24 +18,23 @@
 #define NUM_TILES_Y 9
 #define NUM_MINES 10
 
-struct Tile{
+typedef struct{
 	int adjacent_mines;
 	bool revealed;
-};
-
-struct GameState{
-	Tile tiles[NUM_TILES_X][NUM_TILES_Y];
-};
+	bool is_flag;
+} Tile;
 
 //Client authentication variables
 char username[30];
 char password[30];
 void Menu(void);
 
-int minesRemaining;
+int minesRemaining = 0;
+void initialiseGame(void);
 void drawGame(void);
 char coord[NUM_TILES_Y] = {'A','B','C','D','E','F','G','H','I'};
-struct GameState game;
+Tile game[NUM_TILES_X][NUM_TILES_Y];
+bool playing = false;
 
 int main(int argc, char* argv[]){
 	int sockfd, numbytes, i=0;  
@@ -70,32 +69,59 @@ int main(int argc, char* argv[]){
 		exit(1);
 	}
 	*/
+
 	//User menu
-	printf("==========================================\n");
+	printf("===============================================\n");
 	printf("Welcome to the online Minesweeper gaming system\n");
-	printf("==========================================\n\n");
+	printf("===============================================\n\n");
 	printf("You are required to log on with your registered user name and password.\n\n");
 	printf("User name:");
 	scanf("%s", &username);
 	printf("Password:");
 	scanf("%s", password);
 	//TODO: send this and check the server. For client testing, assume correct.
-	Menu();
+	while(1){
+		//show the main menu
+		Menu();
+
+		//loop the play logic while playing
+		while(playing){
+			char selection[10];
+			char tile[10];
+			drawGame();
+			printf("Choose an option:\n<R> Reveal a tile\n<P> Place flag\n<Q> Quit game\n\n");
+			printf("Option (R, P, Q): ");
+			scanf(" %c", &selection);
+			printf("%c\n", selection);
+			if(*selection == 'R' || *selection == 'r'){
+				printf("\nSelect a tile to reveal (eg:A1): ");
+				scanf(" %c", &tile);
+				//TODO send this data to the server and then update the tile states based on this data
+			}
+			else if(*selection == 'P' || *selection == 'r'){
+				printf("\nSelect a tile to place a flag on (eg:A1): ");
+				scanf(" %c", &tile);
+				//TODO send this data to the server and then update the tile states based on this data
+			}
+			printf("\n");
+			
+
+		}
+	}
 }
 
 void Menu(void){
-	int selection; 
+	int selection = 0;
 	//play menu
 	printf("Welcome to the Minesweeper gaming system.\n\n");
 	printf("Please enter a selection:\n<1> Play Minesweeper\n<2> Show Leaderboard\n<3> Quit\n\n");
 	printf("Selection option (1-3):");
 	scanf("%d", &selection);
-	
+
 	switch(selection){
 		case 1:
-			//initialise the Minesweeper
-			minesRemaining = NUM_MINES;
-			drawGame();
+			initialiseGame();
+			playing = true;
 			break;
 		case 2:
 			//show leaderboard
@@ -105,24 +131,50 @@ void Menu(void){
 	}
 }
 
+void initialiseGame(void){
+	//initialise the Minesweeper
+	minesRemaining = NUM_MINES;
+	for(int i = 0; i < NUM_TILES_Y; i++){
+		for(int d = 0; d < NUM_TILES_X; d++){
+			//starting state is everything is no flag and not revealed
+			game[d][i].is_flag = false;
+			game[d][i].revealed = false;
+			game[d][i].adjacent_mines = 0;
+		}
+	}
+}
+
 void drawGame(void){
 
-	//setup the frame 
+	//setup the Y frame
 	printf("Remaining mines: %d\n\n", minesRemaining);
 	for(int i = 1; i <= NUM_TILES_X; i++){
 		printf("\t%d", i);
 	}
+	printf("\n");
+	for(int i = 1; i <= NUM_TILES_X; i++){
+		printf("\t-");
+	}
+	printf("\n");
+
 	for(int i = 0; i<NUM_TILES_Y; i++){
+		//write the X coordinate to the start of the line
 		printf("%c |\t", coord[i]);
 		for(int d = 0; d<= NUM_TILES_X; d++){
-			if(game.tiles[d][i].revealed==true){
-				printf("%d\t", GameState.tiles[d][i].adjacent_mines);
+			//if flagged then print that, ignore adjacent tiles parameter
+			if(game[d][i].is_flag==true){
+				printf("+\t");
 			}
-			else if(game.tiles[d][i].is_flag==true){
-				printf("+");
+			//if revealed is true then print the adjacent tiles parameter
+			else if(game[d][i].revealed==true){
+				printf("%d\t", game[d][i].adjacent_mines);
+			}
+			//else ignore and print nothing
+			else{
+				printf(" \t");
 			}
 		}
-		printf("\n");
+		printf("\n\n");
 	}
 
 }
